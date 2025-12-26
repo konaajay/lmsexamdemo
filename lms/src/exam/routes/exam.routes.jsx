@@ -14,6 +14,7 @@ const ExamRoutes = (
     <Route path="dashboard" element={<ExamDashboard />} />
     <Route path="question-bank" element={<QuestionBank />} />
     <Route path="create-exam" element={<CreateExam />} />
+    <Route path="edit-exam/:id" element={<CreateExam />} />
     <Route path="schedule" element={<ExamSchedule />} />
     <Route path="reattempt" element={<ReattemptRules />} />
     <Route path="reports" element={<ExamReports />} />

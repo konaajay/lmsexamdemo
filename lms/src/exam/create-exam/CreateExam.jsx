@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import QuestionForm from "../components/QuestionForm";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -44,6 +44,9 @@ const MixedQuestionManager = ({ onAdd }) => {
 
 const CreateExam = () => {
   const navigate = useNavigate();
+  const { id } = useParams(); // Get ID from URL if present
+  const isEditMode = !!id;
+
   const [examType, setExamType] = useState("mixed"); // Default to mixed for flexibility
   const [questions, setQuestions] = useState([]);
 
@@ -52,6 +55,26 @@ const CreateExam = () => {
   const [course, setCourse] = useState("");
   const [totalMarks, setTotalMarks] = useState(100);
   const [duration, setDuration] = useState(60);
+
+  // Load data if in Edit Mode
+  useEffect(() => {
+    if (isEditMode) {
+      const savedExams = JSON.parse(localStorage.getItem("exams") || "[]");
+      const examToEdit = savedExams.find(e => e.id.toString() === id);
+
+      if (examToEdit) {
+        setExamName(examToEdit.title);
+        setCourse(examToEdit.course);
+        setExamType(examToEdit.type);
+        setTotalMarks(examToEdit.targetMarks || 100);
+        setDuration(examToEdit.duration);
+        setQuestions(examToEdit.questions || []);
+      } else {
+        toast.error("Exam not found!");
+        navigate("/exam/dashboard");
+      }
+    }
+  }, [id, isEditMode, navigate]);
 
   const currentTotalMarks = useMemo(() => {
     return questions.reduce((acc, q) => acc + (q.marks || 0), 0);
@@ -73,28 +96,35 @@ const CreateExam = () => {
       return;
     }
 
-    const newExam = {
-      id: Date.now(), // simple unique id
+    const examData = {
+      id: isEditMode ? parseInt(id) : Date.now(),
       title: examName,
       course: course,
       type: examType,
-      totalMarks: currentTotalMarks, // Usng calculated total marks
-      targetMarks: totalMarks, // Keeping target for reference
+      totalMarks: currentTotalMarks,
+      targetMarks: totalMarks,
       duration: duration,
       questions: questions,
-      dateCreated: new Date().toISOString()
+      dateCreated: isEditMode ? new Date().toISOString() : new Date().toISOString() // Optionally keep original date if preferred
     };
 
     // Save to LocalStorage
     const existingExams = JSON.parse(localStorage.getItem("exams")) || [];
-    const updatedExams = [...existingExams, newExam];
+
+    let updatedExams;
+    if (isEditMode) {
+      updatedExams = existingExams.map(e => e.id.toString() === id ? { ...e, ...examData, dateCreated: e.dateCreated } : e); // Keep original dateCreated on edit
+    } else {
+      updatedExams = [...existingExams, examData];
+    }
+
     localStorage.setItem("exams", JSON.stringify(updatedExams));
 
-    toast.success("Exam created successfully! Redirecting...");
+    toast.success(isEditMode ? "Exam updated successfully!" : "Exam created successfully! Redirecting...");
 
     // Redirect to View Paper
     setTimeout(() => {
-      navigate(`/exam/view-paper/${newExam.id}`);
+      navigate(`/exam/view-paper/${examData.id}`);
     }, 1500);
   };
 
@@ -121,8 +151,8 @@ const CreateExam = () => {
               <div className="card-header bg-transparent border-0 pt-4 pb-2 px-3 px-md-5">
                 <div className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
                   <div className="text-center text-md-start">
-                    <h2 className="fw-bold mb-1" style={{ color: "#2d3748" }}>Create New Exam</h2>
-                    <p className="text-muted mb-0">Design a comprehensive assessment for your students.</p>
+                    <h2 className="fw-bold mb-1" style={{ color: "#2d3748" }}>{isEditMode ? "Edit Exam" : "Create New Exam"}</h2>
+                    <p className="text-muted mb-0">{isEditMode ? "Modify your assessment details below." : "Design a comprehensive assessment for your students."}</p>
                   </div>
                   <div className="text-end">
                     <span className="badge rounded-pill bg-primary px-3 py-2 fs-6 shadow-sm">
@@ -289,7 +319,8 @@ const CreateExam = () => {
                         onClick={handleSave}
                         style={{ background: "linear-gradient(45deg, #111 0%, #333 100%)", border: "none" }}
                       >
-                        <i className="bi bi-rocket-takeoff me-2"></i> Publish Exam
+                        <i className={`bi ${isEditMode ? 'bi-check-circle' : 'bi-rocket-takeoff'} me-2`}></i>
+                        {isEditMode ? "Update Exam" : "Publish Exam"}
                       </button>
                     </div>
                   </div>

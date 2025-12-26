@@ -179,8 +179,11 @@ const ExamDashboard = () => {
                         </span>
                       </td>
                       <td className="pe-4 text-end">
-                        <Link to={`/exam/view-paper/${exam.id}`} className="btn btn-sm btn-light border fw-bold text-primary shadow-sm hover-lift">
+                        <Link to={`/exam/view-paper/${exam.id}`} className="btn btn-sm btn-light border fw-bold text-primary shadow-sm hover-lift me-2">
                           <i className="bi bi-eye me-1"></i> Preview
+                        </Link>
+                        <Link to={`/exam/edit-exam/${exam.id}`} className="btn btn-sm btn-light border fw-bold text-secondary shadow-sm hover-lift">
+                          <i className="bi bi-pencil me-1"></i> Edit
                         </Link>
                       </td>
                     </tr>
