@@ -1,19 +1,61 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import QuestionForm from "../components/QuestionForm";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+// Internal Sub-component for Mixed Type Management
+const MixedQuestionManager = ({ onAdd }) => {
+  const [activeTab, setActiveTab] = useState("quiz");
+
+  return (
+    <div>
+      <div className="px-4 pt-4 pb-2">
+        <div className="d-grid gap-2 d-md-flex justify-content-center bg-light p-1 rounded-pill border">
+          <button
+            className={`btn btn-sm rounded-pill px-3 fw-bold transition-all ${activeTab === 'quiz' ? 'btn-white shadow-sm text-primary' : 'text-muted border-0'}`}
+            onClick={() => setActiveTab('quiz')}
+          >
+            Quiz
+          </button>
+          <button
+            className={`btn btn-sm rounded-pill px-3 fw-bold transition-all ${activeTab === 'short' ? 'btn-white shadow-sm text-primary' : 'text-muted border-0'}`}
+            onClick={() => setActiveTab('short')}
+          >
+            Short
+          </button>
+          <button
+            className={`btn btn-sm rounded-pill px-3 fw-bold transition-all ${activeTab === 'long' ? 'btn-white shadow-sm text-primary' : 'text-muted border-0'}`}
+            onClick={() => setActiveTab('long')}
+          >
+            Long
+          </button>
+        </div>
+      </div>
+
+      <div className="animate-fade-in">
+        <div key={activeTab}>
+          <QuestionForm type={activeTab} onAdd={onAdd} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const CreateExam = () => {
   const navigate = useNavigate();
-  const [examType, setExamType] = useState("quiz");
+  const [examType, setExamType] = useState("mixed"); // Default to mixed for flexibility
   const [questions, setQuestions] = useState([]);
 
   // Form State
   const [examName, setExamName] = useState("");
   const [course, setCourse] = useState("");
-  const [totalMarks, setTotalMarks] = useState("");
-  const [duration, setDuration] = useState("");
+  const [totalMarks, setTotalMarks] = useState(100);
+  const [duration, setDuration] = useState(60);
+
+  const currentTotalMarks = useMemo(() => {
+    return questions.reduce((acc, q) => acc + (q.marks || 0), 0);
+  }, [questions]);
 
   const addQuestion = (question) => {
     setQuestions((prev) => [...prev, question]);
@@ -26,12 +68,18 @@ const CreateExam = () => {
       return;
     }
 
+    if (questions.length === 0) {
+      toast.warn("Please add at least one question.");
+      return;
+    }
+
     const newExam = {
       id: Date.now(), // simple unique id
       title: examName,
       course: course,
       type: examType,
-      totalMarks: totalMarks,
+      totalMarks: currentTotalMarks, // Usng calculated total marks
+      targetMarks: totalMarks, // Keeping target for reference
       duration: duration,
       questions: questions,
       dateCreated: new Date().toISOString()
@@ -51,132 +99,206 @@ const CreateExam = () => {
   };
 
   return (
-    <div className="card shadow-sm border-0">
+    <div className="container-fluid min-vh-100 py-4" style={{
+      background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+      fontFamily: "'Inter', sans-serif"
+    }}>
       <ToastContainer />
-      <div className="card-header bg-white py-3">
-        <h5 className="mb-0 fw-bold">Create Exam</h5>
-      </div>
 
-      <div className="card-body">
-        {/* Exam Meta */}
-        <div className="row mb-3">
-          <div className="col-md-6">
-            <label className="form-label">Exam Name</label>
-            <input
-              className="form-control"
-              value={examName}
-              onChange={(e) => setExamName(e.target.value)}
-              placeholder="e.g. Final Semester Java"
-            />
-          </div>
+      <div className="container">
+        <div className="row justify-content-center">
+          <div className="col-lg-10">
 
-          <div className="col-md-6">
-            <label className="form-label">Course</label>
-            <input
-              className="form-control"
-              value={course}
-              onChange={(e) => setCourse(e.target.value)}
-              placeholder="e.g. CS-101"
-            />
-          </div>
-        </div>
+            {/* Main Card */}
+            <div className="card border-0 shadow-lg overflow-hidden" style={{
+              borderRadius: "20px",
+              background: "rgba(255, 255, 255, 0.85)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(255, 255, 255, 0.3)"
+            }}>
 
-        <div className="row mb-3">
-          <div className="col-md-4">
-            <label className="form-label">Exam Type</label>
-            <select
-              className="form-select"
-              value={examType}
-              onChange={(e) => {
-                setExamType(e.target.value);
-                setQuestions([]); // reset when type changes
-              }}
-            >
-              <option value="quiz">Quiz</option>
-              <option value="short">Short Answer</option>
-              <option value="long">Long Answer</option>
-              <option value="mixed">Mixed</option>
-            </select>
-          </div>
-
-          <div className="col-md-4">
-            <label className="form-label">Total Marks</label>
-            <input
-              type="number"
-              className="form-control"
-              value={totalMarks}
-              onChange={(e) => setTotalMarks(e.target.value)}
-            />
-          </div>
-
-          <div className="col-md-4">
-            <label className="form-label">Duration (min)</label>
-            <input
-              type="number"
-              className="form-control"
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <hr />
-
-        <h5>Add Questions</h5>
-
-        {examType === "quiz" && (
-          <QuestionForm type="quiz" onAdd={addQuestion} />
-        )}
-        {examType === "short" && (
-          <QuestionForm type="short" onAdd={addQuestion} />
-        )}
-        {examType === "long" && (
-          <QuestionForm type="long" onAdd={addQuestion} />
-        )}
-        {examType === "mixed" && (
-          <>
-            <p className="text-muted small">Add different types of questions below:</p>
-            <div className="mb-3">
-              <h6 className="text-primary">Multiple Choice</h6>
-              <QuestionForm type="quiz" onAdd={addQuestion} />
-            </div>
-            <div className="mb-3">
-              <h6 className="text-primary">Short Answer</h6>
-              <QuestionForm type="short" onAdd={addQuestion} />
-            </div>
-          </>
-        )}
-
-        {/* Added Questions */}
-        <hr />
-        <h5>Added Questions ({questions.length})</h5>
-
-        {questions.length === 0 && (
-          <p className="text-muted">No questions added yet.</p>
-        )}
-
-        <ul className="list-group mb-3">
-          {questions.map((q, index) => (
-            <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
-              <div>
-                <span className="badge bg-secondary me-2">{q.type}</span>
-                {q.question}
-                {q.image && (
-                  <div className="mt-2">
-                    <img src={q.image} alt="Question" className="img-thumbnail" style={{ height: '50px' }} />
+              {/* Header */}
+              <div className="card-header bg-transparent border-0 pt-4 pb-2 px-3 px-md-5">
+                <div className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                  <div className="text-center text-md-start">
+                    <h2 className="fw-bold mb-1" style={{ color: "#2d3748" }}>Create New Exam</h2>
+                    <p className="text-muted mb-0">Design a comprehensive assessment for your students.</p>
                   </div>
-                )}
+                  <div className="text-end">
+                    <span className="badge rounded-pill bg-primary px-3 py-2 fs-6 shadow-sm">
+                      <i className="bi bi-layers me-2"></i>
+                      {questions.length} Questions
+                    </span>
+                  </div>
+                </div>
               </div>
-              <button className="btn btn-sm btn-outline-danger" onClick={() => setQuestions(questions.filter((_, i) => i !== index))}>
-                <i className="bi bi-trash"></i>
-              </button>
-            </li>
-          ))}
-        </ul>
 
-        <button className="btn btn-primary mt-3 w-100 fw-bold" onClick={handleSave}>
-          <i className="bi bi-save me-2"></i> Save & Create Exam
-        </button>
+              <div className="card-body px-3 px-md-5 pb-5">
+
+                {/* Configuration Section */}
+                <div className="p-4 rounded-4 mb-5" style={{ background: "rgba(255,255,255,0.6)", border: "1px solid rgba(0,0,0,0.05)" }}>
+                  <h5 className="fw-bold mb-3 text-secondary text-uppercase small ls-1">Exam Details</h5>
+                  <div className="row g-3">
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold text-muted small">Exam Title</label>
+                      <input
+                        className="form-control form-control-lg border-0 bg-white shadow-sm"
+                        value={examName}
+                        onChange={(e) => setExamName(e.target.value)}
+                        placeholder="e.g. Advanced Java Finals 2024"
+                      />
+                    </div>
+
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold text-muted small">Course / Subject</label>
+                      <input
+                        className="form-control form-control-lg border-0 bg-white shadow-sm"
+                        value={course}
+                        onChange={(e) => setCourse(e.target.value)}
+                        placeholder="e.g. CS-301 Data Structures"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="row g-3 mt-2">
+                    <div className="col-md-4">
+                      <label className="form-label fw-semibold text-muted small">Format</label>
+                      <select
+                        className="form-select border-0 bg-white shadow-sm"
+                        value={examType}
+                        onChange={(e) => {
+                          setExamType(e.target.value);
+                          setQuestions([]); // Optional: reset if type strictness is needed
+                        }}
+                      >
+                        <option value="mixed">Mixed Format (Flexible)</option>
+                        <option value="quiz">Multiple Choice Only</option>
+                        <option value="short">Short Answer Only</option>
+                        <option value="long">Long Answer Only</option>
+                      </select>
+                    </div>
+
+                    <div className="col-md-4">
+                      <label className="form-label fw-semibold text-muted small">Target Marks</label>
+                      <div className="input-group shadow-sm rounded">
+                        <input
+                          type="number"
+                          className="form-control border-0"
+                          value={totalMarks}
+                          onChange={(e) => setTotalMarks(e.target.value)}
+                        />
+                        <span className={`input-group-text border-0 ${currentTotalMarks > parseInt(totalMarks) ? 'bg-danger text-white' : 'bg-white text-muted'}`}>
+                          Current: {currentTotalMarks}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="col-md-4">
+                      <label className="form-label fw-semibold text-muted small">Duration (Minutes)</label>
+                      <input
+                        type="number"
+                        className="form-control border-0 bg-white shadow-sm"
+                        value={duration}
+                        onChange={(e) => setDuration(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <hr className="my-5 border-secondary opacity-10" />
+
+                <div className="row">
+                  {/* Left Column: Form */}
+                  <div className="col-lg-5">
+                    <div className="sticky-top" style={{ top: "20px", zIndex: 1 }}>
+                      <h5 className="fw-bold mb-3">Add Question</h5>
+                      <div className="card border-0 shadow-sm overflow-hidden" style={{ borderRadius: "15px" }}>
+                        <div className="card-body p-0">
+                          {/* Logic to show form based on type */}
+                          {examType === "mixed" ? (
+                            <MixedQuestionManager onAdd={addQuestion} />
+                          ) : (
+                            <div>
+                              <QuestionForm type={examType} onAdd={addQuestion} />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Preview List */}
+                  <div className="col-lg-7">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <h5 className="fw-bold mb-0">Question Paper Preview</h5>
+                      {questions.length > 0 && (
+                        <button className="btn btn-sm btn-outline-danger" onClick={() => setQuestions([])}>
+                          Clear All
+                        </button>
+                      )}
+                    </div>
+
+                    {questions.length === 0 ? (
+                      <div className="text-center py-5 border rounded-4 border-dashed" style={{ background: "rgba(255,255,255,0.4)" }}>
+                        <i className="bi bi-clipboard-plus text-muted display-4 opacity-25"></i>
+                        <p className="text-muted mt-3">No questions added yet.<br />Start building your exam on the left.</p>
+                      </div>
+                    ) : (
+                      <div className="vstack gap-3">
+                        {questions.map((q, index) => (
+                          <div key={index} className="card border-0 shadow-sm position-relative overflow-hidden group-hover-action">
+                            <div className="card-body">
+                              <div className="d-flex justify-content-between">
+                                <span className="badge bg-light text-dark mb-2 border">Q{index + 1} &bull; {q.type.toUpperCase()}</span>
+                                <span className="fw-bold text-primary">{q.marks} Marks</span>
+                              </div>
+                              <h6 className="card-title fw-bold text-dark">{q.question}</h6>
+
+                              {q.image && (
+                                <div className="mt-2 mb-2">
+                                  <img src={q.image} alt="Ref" className="img-thumbnail" style={{ height: '80px' }} />
+                                </div>
+                              )}
+
+                              {q.type === 'quiz' && (
+                                <ul className="list-unstyled small text-muted mb-0 ps-2 border-start border-3 border-light">
+                                  {q.options.map((opt, i) => (
+                                    <li key={i} className={i === parseInt(q.correctOption) ? "text-success fw-bold" : ""}>
+                                      {i + 1}. {opt} {i === parseInt(q.correctOption) && <i className="bi bi-check-circle-fill ms-1"></i>}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+
+                            <button
+                              className="btn btn-danger btn-sm position-absolute top-0 end-0 m-2"
+                              onClick={() => setQuestions(questions.filter((_, i) => i !== index))}
+                              title="Remove Question"
+                            >
+                              <i className="bi bi-x-lg"></i>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="mt-4 pt-3 border-top">
+                      <button
+                        className="btn btn-dark btn-lg w-100 fw-bold shadow-lg"
+                        onClick={handleSave}
+                        style={{ background: "linear-gradient(45deg, #111 0%, #333 100%)", border: "none" }}
+                      >
+                        <i className="bi bi-rocket-takeoff me-2"></i> Publish Exam
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

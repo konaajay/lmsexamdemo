@@ -100,9 +100,9 @@ const ExamPaperView = () => {
                                     )}
                                 </div>
                                 <div className="text-end ms-3">
-                                    {/* Placeholder for marks per question if we had them */}
+                                    {/* Marks per question */}
                                     <span className="badge bg-light text-dark border">
-                                        {Math.round(exam.totalMarks / exam.questions.length)} Marks
+                                        {q.marks || Math.round(exam.totalMarks / exam.questions.length)} Marks
                                     </span>
                                 </div>
                             </div>
