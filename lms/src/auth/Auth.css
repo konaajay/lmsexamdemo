@@ -21,7 +21,7 @@ body {
 
 .auth-container {
     min-height: 100vh;
-    width: 100vw;
+    width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -198,4 +198,41 @@ body {
     100% {
         transform: translate(0, 0);
     }
+}
+
+/* Response Design Adjustments */
+@media (max-width: 576px) {
+    .glass-card {
+        padding: 1.5rem;
+    }
+
+    .auth-header h2 {
+        font-size: 1.75rem;
+    }
+
+    .auth-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .shape-1 {
+        width: 200px;
+        height: 200px;
+        top: -5%;
+        left: -5%;
+    }
+
+    .shape-2 {
+        width: 200px;
+        height: 200px;
+        bottom: -5%;
+        right: -5%;
+    }
+}
+
+/* Ensure container doesn't cause horizontal scroll and simpler centering */
+.auth-container {
+    width: 100%;
+    /* Changed from 100vw to allow scrollbar without overflow */
+    padding: 1rem;
+    /* Add padding to prevent card touching edges on very small screens */
 }

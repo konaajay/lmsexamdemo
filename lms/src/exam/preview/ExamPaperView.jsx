@@ -25,42 +25,35 @@ const ExamPaperView = () => {
     }
 
     return (
-        <div className="container py-5">
+        <div className="container py-5" style={{ fontFamily: "'Inter', sans-serif" }}>
 
-            {/* Paper Container - styled to look like A4 paper nicely */}
-            <div className="bg-white shadow-lg p-5 mx-auto" style={{ maxWidth: '800px', minHeight: '1000px' }}>
+            {/* Paper Container - styled to look like the referenced worksheet */}
+            <div className="bg-white shadow-lg p-5 mx-auto" style={{ maxWidth: '850px', minHeight: '1000px', borderTop: '5px solid #287a9f' }}>
 
-                {/* Header */}
-                <div className="text-center border-bottom pb-4 mb-4">
-                    <h1 className="fw-bold text-uppercase mb-2">{exam.title}</h1>
-                    <h4 className="text-secondary mb-3">{exam.course}</h4>
-
-                    <div className="d-flex justify-content-between text-muted px-5 fw-bold">
-                        <span>Duration: {exam.duration} Minutes</span>
-                        <span>Total Marks: {exam.totalMarks}</span>
+                {/* Header matching image style */}
+                <div className="mb-5">
+                    <h1 className="fw-bold mb-3" style={{ color: "#1f4e5f", fontSize: "2rem" }}>
+                        {exam.title}
+                    </h1>
+                    <div className="d-flex align-items-center text-secondary small text-uppercase ls-1">
+                        <span className="me-3 fw-bold">{exam.course}</span>
+                        <span className="me-3">|</span>
+                        <span className="me-3">{exam.questions.length} Questions</span>
+                        <span className="me-3">|</span>
+                        <span>{exam.duration} Mins</span>
                     </div>
-                </div>
-
-                {/* Instructions (Optional boilerplate) */}
-                <div className="mb-4">
-                    <h6 className="fw-bold text-decoration-underline">Instructions:</h6>
-                    <ul className="small text-muted">
-                        <li>Answer all questions.</li>
-                        <li>Read each question carefully before answering.</li>
-                        <li>Use of unauthorized materials is prohibited.</li>
-                    </ul>
                 </div>
 
                 {/* Questions Loop */}
                 <div className="questions-section">
                     {exam.questions.map((q, index) => (
-                        <div key={index} className="mb-5">
-                            <div className="d-flex">
-                                <span className="fw-bold me-2">Q{index + 1}.</span>
+                        <div key={index} className="mb-4">
+                            <div className="d-flex align-items-baseline">
+                                <span className="fw-bold me-2" style={{ color: "#333", minWidth: "25px" }}>{index + 1}.</span>
                                 <div className="flex-grow-1">
-                                    <p className="fw-bold mb-2 break-word">
+                                    <h6 className="fw-bold mb-2 text-dark" style={{ lineHeight: "1.5" }}>
                                         {q.question}
-                                    </p>
+                                    </h6>
 
                                     {/* Question Image */}
                                     {q.image && (
@@ -76,17 +69,18 @@ const ExamPaperView = () => {
 
                                     {/* Options for Quiz */}
                                     {q.type === 'quiz' && q.options && (
-                                        <div className="ps-3">
+                                        <div className="ps-0 mt-2">
                                             {q.options.map((opt, i) => (
-                                                <div key={i} className="form-check mb-1">
+                                                <div key={i} className="form-check mb-2">
                                                     <input
                                                         className="form-check-input"
                                                         type="radio"
                                                         name={`q${index}`}
                                                         id={`q${index}_opt${i}`}
                                                         disabled
+                                                        style={{ borderColor: "#adb5bd" }}
                                                     />
-                                                    <label className="form-check-label" htmlFor={`q${index}_opt${i}`}>
+                                                    <label className="form-check-label text-secondary" htmlFor={`q${index}_opt${i}`}>
                                                         {opt}
                                                     </label>
                                                 </div>
@@ -96,14 +90,8 @@ const ExamPaperView = () => {
 
                                     {/* Space for Written Answers */}
                                     {(q.type === 'short' || q.type === 'long') && (
-                                        <div className="border rounded bg-light mt-2" style={{ height: q.type === 'short' ? '80px' : '150px' }}></div>
+                                        <div className="border-bottom border-secondary border-opacity-25 mt-4 mb-2" style={{ height: q.type === 'short' ? '40px' : '100px' }}></div>
                                     )}
-                                </div>
-                                <div className="text-end ms-3">
-                                    {/* Marks per question */}
-                                    <span className="badge bg-light text-dark border">
-                                        {q.marks || Math.round(exam.totalMarks / exam.questions.length)} Marks
-                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -111,19 +99,21 @@ const ExamPaperView = () => {
                 </div>
 
                 {/* Footer */}
-                <div className="text-center border-top pt-4 mt-5 text-muted small">
-                    *** End of Question Paper ***
+                <div className="text-center border-top pt-4 mt-5">
+                    <p className="text-muted small mb-0">
+                        Course: {exam.course} &bull; Total Marks: {exam.totalMarks}
+                    </p>
                 </div>
 
             </div>
 
             {/* Action Buttons (Non-printable area) */}
             <div className="text-center mt-4 no-print">
-                <button className="btn btn-primary me-2" onClick={() => window.print()}>
+                <button className="btn btn-primary me-2 shadow-sm" onClick={() => window.print()}>
                     <i className="bi bi-printer me-2"></i> Print Paper
                 </button>
-                <button className="btn btn-outline-secondary" onClick={() => navigate('/exam/create-exam')}>
-                    Create Another
+                <button className="btn btn-outline-secondary" onClick={() => navigate('/exam/dashboard')}>
+                    Back to Dashboard
                 </button>
             </div>
 
@@ -133,6 +123,7 @@ const ExamPaperView = () => {
                 .no-print { display: none !important; }
                 body { background: white; }
                 .shadow-lg { box-shadow: none !important; }
+                .container { padding: 0 !important; max-width: 100% !important; }
             }
         `}
             </style>

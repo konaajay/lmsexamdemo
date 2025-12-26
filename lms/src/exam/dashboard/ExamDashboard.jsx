@@ -1,259 +1,272 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 const ExamDashboard = () => {
   const [exams, setExams] = useState([]);
+  const [filter, setFilter] = useState("total");
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    const savedExams = JSON.parse(localStorage.getItem("exams") || "[]");
-    // Sort by date created desc
-    setExams(savedExams.sort((a, b) => new Date(b.dateCreated) - new Date(a.dateCreated)));
+    const saved = JSON.parse(localStorage.getItem("exams") || "[]");
+
+    const demoCompletedExam = {
+      id: "demo-1",
+      title: "Introduction to React",
+      course: "Frontend Masterclass",
+      type: "quiz",
+      dateCreated: "2024-11-15T10:00:00Z",
+      status: "completed"
+    };
+
+    setExams(
+      [...saved, demoCompletedExam].sort(
+        (a, b) => new Date(b.dateCreated) - new Date(a.dateCreated)
+      )
+    );
   }, []);
 
-  const [filter, setFilter] = useState("total");
+  const stats = useMemo(() => {
+    const total = exams.length;
+    const completed = exams.filter(e => e.status === "completed").length;
+    const scheduled = total - completed;
+    return { total, scheduled, completed };
+  }, [exams]);
 
-  // Filter exams based on search and active tab
-  const filteredExams = exams.filter(e => {
-    // Simulate status for local exams (defaulting to 'draft' which we treat as upcoming by default for now)
-    // In a real app, 'status' would be part of the exam object.
-    // For this demo: assume all created exams are 'upcoming' (draft) unless logic says otherwise.
-    const status = e.status || 'upcoming';
+  const filteredExams = exams.filter(exam => {
+    const status = exam.status || "upcoming";
 
-    const matchesSearch = e.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      e.course.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter =
+      filter === "total" ||
+      (filter === "completed" && status === "completed") ||
+      (filter === "upcoming" && status !== "completed");
 
-    let matchesFilter = true;
-    if (filter === 'upcoming') matchesFilter = status === 'upcoming' || status === 'scheduled' || status === 'draft';
-    if (filter === 'completed') matchesFilter = status === 'completed';
+    const matchesSearch =
+      exam.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exam.course.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return matchesSearch && matchesFilter;
+    return matchesFilter && matchesSearch;
   });
 
   return (
-    <div className="container-fluid min-vh-100 py-4" style={{
-      background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
-      fontFamily: "'Inter', sans-serif"
-    }}>
+
+    <div className="container-fluid min-vh-100" style={{ backgroundColor: "#f8f9fa", fontFamily: "'Inter', sans-serif", paddingTop: "80px" }}>
       <div className="container">
 
-        {/* Header Section */}
-        <div className="d-flex justify-content-end align-items-center mb-5">
+        {/* Header */}
+        <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-5 gap-3">
+          <div>
+            <h2 className="fw-bold text-dark mb-1">Exam Dashboard</h2>
+            <p className="text-secondary mb-0">Overview of exams and  performance.</p>
+          </div>
+
           <div className="d-flex gap-3">
-            <Link to="/exam/reattempt" className="btn btn-white shadow-sm fw-bold text-secondary">
-              <i className="bi bi-gear me-2"></i>Settings
+            <Link to="/exam/question-bank" className="btn btn-light shadow-sm text-secondary fw-semibold">
+              <i className="bi bi-collection me-2"></i>Question Bank
             </Link>
-            <Link to="/exam/create-exam" className="btn btn-primary shadow fw-bold px-4">
-              <i className="bi bi-plus-lg me-2"></i>Create New Exam
+            <Link to="/exam/create-exam" className="btn btn-primary shadow fw-bold px-4 hover-scale">
+              <i className="bi bi-plus-lg me-2"></i>Create Exam
             </Link>
           </div>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats Section with Hover Effects */}
         <div className="row g-4 mb-5">
-          <div className="col-md-4">
-            <div className="card border-0 shadow-sm h-100" style={{ borderRadius: "15px", background: "rgba(255,255,255,0.8)" }}>
-              <div className="card-body p-4 d-flex align-items-center">
-                <div className="rounded-circle bg-primary bg-opacity-10 p-3 me-3 text-primary">
-                  <i className="bi bi-journal-text fs-4"></i>
-                </div>
-                <div>
-                  <h6 className="text-muted text-uppercase small fw-bold mb-1 ls-1">Total Exams</h6>
-                  <h3 className="mb-0 fw-bold text-dark">{exams.length + 24}</h3>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-4">
-            <div className="card border-0 shadow-sm h-100" style={{ borderRadius: "15px", background: "rgba(255,255,255,0.8)" }}>
-              <div className="card-body p-4 d-flex align-items-center">
-                <div className="rounded-circle bg-warning bg-opacity-10 p-3 me-3 text-warning">
-                  <i className="bi bi-clock-history fs-4"></i>
-                </div>
-                <div>
-                  <h6 className="text-muted text-uppercase small fw-bold mb-1 ls-1">Scheduled</h6>
-                  <h3 className="mb-0 fw-bold text-dark">5</h3>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-4">
-            <div className="card border-0 shadow-sm h-100" style={{ borderRadius: "15px", background: "rgba(255,255,255,0.8)" }}>
-              <div className="card-body p-4 d-flex align-items-center">
-                <div className="rounded-circle bg-success bg-opacity-10 p-3 me-3 text-success">
-                  <i className="bi bi-check-circle fs-4"></i>
-                </div>
-                <div>
-                  <h6 className="text-muted text-uppercase small fw-bold mb-1 ls-1">Completed</h6>
-                  <h3 className="mb-0 fw-bold text-dark">156</h3>
-                </div>
-              </div>
-            </div>
-          </div>
+          <StatCard
+            label="Total Exams"
+            value={stats.total}
+            icon="bi-files"
+            color="primary"
+          />
+          <StatCard
+            label="Scheduled"
+            value={stats.scheduled}
+            icon="bi-calendar-check"
+            color="warning"
+          />
+          <StatCard
+            label="Completed"
+            value={stats.completed}
+            icon="bi-check-circle"
+            color="success"
+          />
         </div>
 
-        {/* Exams Table Section */}
-        <div className="card border-0 shadow-lg overflow-hidden" style={{
-          borderRadius: "20px",
-          background: "rgba(255, 255, 255, 0.85)",
-          backdropFilter: "blur(20px)",
-          border: "1px solid rgba(255, 255, 255, 0.3)"
-        }}>
-          <div className="card-header bg-transparent border-0 pt-4 pb-2 px-4">
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+        {/* Main Content Card */}
+        <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+          <div className="card-body p-4">
 
-              {/* Filter Buttons */}
-              <div className="bg-light p-1 rounded-pill d-flex flex-wrap justify-content-center">
-                <button
-                  className={`btn btn-sm rounded-pill px-3 fw-bold ${filter === 'total' ? 'btn-white shadow-sm text-primary' : 'text-muted border-0'}`}
-                  onClick={() => setFilter('total')}
-                  style={filter === 'total' ? { background: 'white' } : {}}
-                >
-                  Total
-                </button>
-                <button
-                  className={`btn btn-sm rounded-pill px-3 fw-bold ${filter === 'upcoming' ? 'btn-white shadow-sm text-primary' : 'text-muted border-0'}`}
-                  onClick={() => setFilter('upcoming')}
-                  style={filter === 'upcoming' ? { background: 'white' } : {}}
-                >
+            {/* Filters & Search Toolbar */}
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 mb-4">
+
+              <div className="bg-light p-1 rounded-pill d-inline-flex flex-wrap justify-content-center">
+                <FilterButton active={filter === "total"} onClick={() => setFilter("total")}>
+                  All Exams
+                </FilterButton>
+                <FilterButton active={filter === "upcoming"} onClick={() => setFilter("upcoming")}>
                   Upcoming
-                </button>
-                <button
-                  className={`btn btn-sm rounded-pill px-3 fw-bold ${filter === 'completed' ? 'btn-white shadow-sm text-primary' : 'text-muted border-0'}`}
-                  onClick={() => setFilter('completed')}
-                  style={filter === 'completed' ? { background: 'white' } : {}}
-                >
+                </FilterButton>
+                <FilterButton active={filter === "completed"} onClick={() => setFilter("completed")}>
                   Completed
-                </button>
+                </FilterButton>
               </div>
 
-              {/* Search Bar */}
-              <div className="input-group" style={{ maxWidth: "300px", minWidth: "250px" }}>
-                <span className="input-group-text bg-white border-end-0 border rounded-start-pill ps-3">
-                  <i className="bi bi-search text-muted"></i>
-                </span>
+              <div className="position-relative w-100" style={{ maxWidth: "300px" }}>
+                <i className="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
                 <input
                   type="text"
-                  className="form-control border-start-0 border rounded-end-pill"
-                  placeholder="Search..."
+                  className="form-control rounded-pill ps-5 bg-light border-0"
+                  placeholder="Search exams..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                 />
               </div>
-
             </div>
-          </div>
 
-          <div className="card-body px-0">
+            {/* Polished Table */}
             <div className="table-responsive">
-              <table className="table table-hover align-middle mb-0" style={{ minWidth: "800px" }}>
-                <thead className="bg-light bg-opacity-50">
-                  <tr className="text-uppercase text-secondary small fw-bold ls-1 border-bottom-0">
-                    <th className="ps-4 py-3 border-0">Exam Name</th>
+              <table className="table table-hover align-middle mb-0">
+                <thead className="bg-light">
+                  <tr className="text-secondary small text-uppercase fw-bold ls-1">
+                    <th className="ps-4 py-3 border-0 rounded-start">Exam Name</th>
                     <th className="py-3 border-0">Course</th>
                     <th className="py-3 border-0">Type</th>
-                    <th className="py-3 border-0">Date Created</th>
+                    <th className="py-3 border-0">Date</th>
                     <th className="py-3 border-0">Status</th>
-                    <th className="pe-4 py-3 border-0 text-end">Actions</th>
+                    <th className="pe-4 py-3 border-0 text-end rounded-end">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {/* LocalStorage Data */}
-                  {filteredExams.map((exam) => (
-                    <tr key={exam.id} style={{ transition: "all 0.2s" }}>
-                      <td className="ps-4 fw-bold text-dark">{exam.title}</td>
-                      <td className="text-muted">{exam.course}</td>
-                      <td>
-                        <span className={`badge rounded-pill fw-normal px-3 py-2 ${exam.type === 'quiz' ? 'bg-primary bg-opacity-10 text-primary' :
-                          exam.type === 'mixed' ? 'bg-info bg-opacity-10 text-info' :
-                            'bg-secondary bg-opacity-10 text-secondary'
-                          }`}>
-                          {exam.type === 'quiz' ? 'Multiple Choice' : exam.type.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="text-muted small">{new Date(exam.dateCreated).toLocaleDateString()}</td>
-                      <td>
-                        <span className="badge rounded-pill bg-warning bg-opacity-10 text-dark fw-bold px-2 border border-warning border-opacity-25">
-                          <i className="bi bi-circle-fill text-warning me-1 small" style={{ fontSize: "0.5rem" }}></i>
-                          Draft
-                        </span>
-                      </td>
-                      <td className="pe-4 text-end">
-                        <Link to={`/exam/view-paper/${exam.id}`} className="btn btn-sm btn-light border fw-bold text-primary shadow-sm hover-lift me-2">
-                          <i className="bi bi-eye me-1"></i> Preview
-                        </Link>
-                        <Link to={`/exam/edit-exam/${exam.id}`} className="btn btn-sm btn-light border fw-bold text-secondary shadow-sm hover-lift">
-                          <i className="bi bi-pencil me-1"></i> Edit
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-
-                  {/* Empty State if no results */}
-                  {filteredExams.length === 0 && exams.length > 0 && (
+                  {filteredExams.length === 0 ? (
                     <tr>
                       <td colSpan="6" className="text-center py-5">
-                        <p className="text-muted mb-0">No exams found matching "{searchTerm}"</p>
+                        <div className="mb-3 text-muted opacity-25" style={{ fontSize: "2.5rem" }}><i className="bi bi-inbox"></i></div>
+                        <p className="text-muted fw-medium">No exams found matching your criteria.</p>
                       </td>
                     </tr>
-                  )}
+                  ) : (
+                    filteredExams.map(exam => {
+                      const completed = exam.status === "completed";
+                      return (
+                        <tr key={exam.id} style={{ transition: "background-color 0.2s" }}>
+                          <td className="ps-4 py-3">
+                            <span className="fw-bold text-dark d-block">{exam.title}</span>
+                          </td>
+                          <td className="text-muted fw-medium">{exam.course}</td>
+                          <td>
+                            <span className={`badge rounded-pill border px-2 py-1 fw-normal ${exam.type === 'quiz' ? 'bg-primary-subtle text-primary border-primary-subtle' : 'bg-secondary-subtle text-secondary border-secondary-subtle'}`}>
+                              {formatType(exam.type)}
+                            </span>
+                          </td>
+                          <td className="text-muted small">
+                            <i className="bi bi-clock me-1 text-secondary opacity-50"></i>
+                            {new Date(exam.dateCreated).toLocaleDateString()}
+                          </td>
+                          <td>
+                            {completed ? (
+                              <span className="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2">
+                                <i className="bi bi-check-circle-fill me-1"></i>Completed
+                              </span>
+                            ) : (
+                              <span className="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2">
+                                <i className="bi bi-hourglass-split me-1"></i>Upcoming
+                              </span>
+                            )}
+                          </td>
+                          <td className="text-end pe-4">
+                            <div className="d-flex justify-content-end gap-2">
+                              <Link
+                                to={`/exam/view-paper/${exam.id}`}
+                                className="btn btn-sm btn-light text-primary fw-medium hover-primary"
+                                title="Preview Exam"
+                              >
+                                Preview
+                              </Link>
 
-                  {/* Demo/Mock Data (only if no real data) */}
-                  {exams.length === 0 && (
-                    <>
-                      <tr>
-                        <td className="ps-4 fw-bold text-dark">Mid-Term Java</td>
-                        <td className="text-muted">Java Programming</td>
-                        <td><span className="badge rounded-pill bg-primary bg-opacity-10 text-primary px-3 py-2">Multiple Choice</span></td>
-                        <td className="text-muted small">2024-10-24</td>
-                        <td>
-                          <span className="badge rounded-pill bg-success bg-opacity-10 text-success fw-bold px-2 border border-success border-opacity-25">
-                            <i className="bi bi-circle-fill text-success me-1 small" style={{ fontSize: "0.5rem" }}></i>
-                            Completed
-                          </span>
-                        </td>
-                        <td className="pe-4 text-end">
-                          <button className="btn btn-sm btn-light border fw-bold text-secondary shadow-sm">Results</button>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="ps-4 fw-bold text-dark">React Fundamentals</td>
-                        <td className="text-muted">Web Development</td>
-                        <td><span className="badge rounded-pill bg-info bg-opacity-10 text-info px-3 py-2">Short Answer</span></td>
-                        <td className="text-muted small">2025-10-28</td>
-                        <td>
-                          <span className="badge rounded-pill bg-primary bg-opacity-10 text-primary fw-bold px-2 border border-primary border-opacity-25">
-                            <i className="bi bi-circle-fill text-primary me-1 small" style={{ fontSize: "0.5rem" }}></i>
-                            Scheduled
-                          </span>
-                        </td>
-                        <td className="pe-4 text-end">
-                          <button className="btn btn-sm btn-light border fw-bold text-secondary shadow-sm">Edit</button>
-                        </td>
-                      </tr>
-                    </>
+                              {!completed && (
+                                <Link
+                                  to={`/exam/edit-exam/${exam.id}`}
+                                  className="btn btn-sm btn-light text-secondary fw-medium hover-dark"
+                                  title="Edit Exam"
+                                >
+                                  Edit
+                                </Link>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
             </div>
-          </div>
 
-          <div className="card-footer bg-transparent border-0 py-3 text-center text-muted small">
-            Showing {filteredExams.length > 0 ? filteredExams.length : (exams.length === 0 ? 2 : 0)} entries
+            {/* Simple Footer */}
+            {filteredExams.length > 0 && (
+              <div className="d-flex justify-content-between align-items-center mt-4 pt-3 border-top text-muted small">
+                <span>Showing {filteredExams.length} results</span>
+                <span>Page 1 of 1</span>
+              </div>
+            )}
+
           </div>
         </div>
       </div>
 
+      {/* Global Dashboard Styles */}
       <style>
         {`
-           .hover-lift:hover {
-              transform: translateY(-2px);
-              transition: transform 0.2s ease-in-out;
+           .hover-lift {
+              transition: transform 0.2s ease, box-shadow 0.2s ease;
            }
+           .hover-lift:hover {
+              transform: translateY(-5px);
+              box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+           }
+           .hover-scale:hover {
+              transform: scale(1.02);
+           }
+           .bg-primary-subtle { background-color: rgba(13, 110, 253, 0.1) !important; }
+           .bg-success-subtle { background-color: rgba(25, 135, 84, 0.1) !important; }
+           .bg-warning-subtle { background-color: rgba(255, 193, 7, 0.1) !important; }
+           .bg-secondary-subtle { background-color: rgba(108, 117, 125, 0.1) !important; }
         `}
       </style>
     </div>
   );
+};
+
+/* ---------- Enhanced Helpers ---------- */
+
+const StatCard = ({ label, value, icon, color }) => (
+  <div className="col-md-4">
+    <div className={`card border-0 shadow-sm h-100 p-3 rounded-4 hover-lift position-relative overflow-hidden`}>
+      <div className={`position-absolute top-0 end-0 p-3 opacity-10 text-${color}`}>
+        <i className={`bi ${icon}`} style={{ fontSize: "3rem" }}></i>
+      </div>
+      <div className="d-flex flex-column justify-content-center h-100 position-relative">
+        <h6 className="text-secondary text-uppercase small fw-bold mb-2 ls-1">{label}</h6>
+        <h2 className={`display-6 fw-bold text-dark mb-0`}>{value}</h2>
+      </div>
+      <div className={`mt-3 h-1 w-100 rounded bg-${color} opacity-25`} style={{ height: "4px" }}></div>
+    </div>
+  </div>
+);
+
+const FilterButton = ({ active, children, onClick }) => (
+  <button
+    className={`btn btn-sm rounded-pill px-3 m-1 fw-semibold transition-all ${active ? "bg-white shadow-sm text-dark" : "text-muted hover-dark"}`}
+    onClick={onClick}
+    style={{ border: "none" }}
+  >
+    {children}
+  </button>
+);
+
+const formatType = type => {
+  if (!type) return "-";
+  if (type === "quiz") return "Multiple Choice";
+  return type.toUpperCase();
 };
 
 export default ExamDashboard;

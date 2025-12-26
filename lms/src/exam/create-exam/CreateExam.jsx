@@ -56,6 +56,19 @@ const CreateExam = () => {
   const [totalMarks, setTotalMarks] = useState(100);
   const [duration, setDuration] = useState(60);
 
+  // Advanced Settings State
+  const [settings, setSettings] = useState({
+    maxAttempts: "1",
+    gradingStrategy: "highest",
+    cooldownPeriod: "0",
+    allowReattemptCondition: "always",
+    randomizeQuestions: true
+  });
+
+  const updateSettings = (key, value) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
   // Load data if in Edit Mode
   useEffect(() => {
     if (isEditMode) {
@@ -69,6 +82,11 @@ const CreateExam = () => {
         setTotalMarks(examToEdit.targetMarks || 100);
         setDuration(examToEdit.duration);
         setQuestions(examToEdit.questions || []);
+
+        // Load settings if they exist, otherwise use defaults
+        if (examToEdit.settings) {
+          setSettings(examToEdit.settings);
+        }
       } else {
         toast.error("Exam not found!");
         navigate("/exam/dashboard");
@@ -105,6 +123,7 @@ const CreateExam = () => {
       targetMarks: totalMarks,
       duration: duration,
       questions: questions,
+      settings: settings, // Save reattempt policies
       dateCreated: isEditMode ? new Date().toISOString() : new Date().toISOString() // Optionally keep original date if preferred
     };
 
@@ -129,9 +148,10 @@ const CreateExam = () => {
   };
 
   return (
-    <div className="container-fluid min-vh-100 py-4" style={{
+    <div className="container-fluid min-vh-100" style={{
       background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
-      fontFamily: "'Inter', sans-serif"
+      fontFamily: "'Inter', sans-serif",
+      paddingTop: "80px"
     }}>
       <ToastContainer />
 
@@ -235,12 +255,132 @@ const CreateExam = () => {
                   </div>
                 </div>
 
+                {/* Reattempt & Policy Settings */}
+                {/* Reattempt & Policy Settings */}
+                <div className="rounded-4 mb-5 card border-0 shadow-sm" style={{ background: "rgba(255,255,255,0.85)" }}>
+                  <div className="card-header bg-transparent border-bottom-0 pt-4 px-4">
+                    <h5 className="fw-bold mb-0 text-secondary text-uppercase small ls-1">
+                      <i className="bi bi-gear-wide-connected me-2"></i>Reattempt & Policy Settings
+                    </h5>
+                  </div>
+                  <div className="card-body px-4 pb-4">
+                    <div className="row g-4">
+                      {/* General Attempts Card */}
+                      <div className="col-md-6">
+                        <div className="card shadow-sm border-0 h-100 bg-light bg-opacity-50">
+                          <div className="card-header bg-transparent border-bottom-0 pt-3 px-3">
+                            <h6 className="fw-bold text-primary mb-0">
+                              <i className="bi bi-arrow-repeat me-2"></i>Attempt Limits
+                            </h6>
+                          </div>
+                          <div className="card-body px-3 pb-3">
+                            <div className="mb-3">
+                              <label className="form-label fw-bold small text-uppercase text-muted">Maximum Attempts Allowed</label>
+                              <select
+                                className="form-select border-0 bg-white shadow-sm"
+                                value={settings.maxAttempts}
+                                onChange={(e) => updateSettings('maxAttempts', e.target.value)}
+                              >
+                                <option value="1">No Reattempts (1 Attempt Total)</option>
+                                <option value="2">2 Attempts</option>
+                                <option value="3">3 Attempts</option>
+                                <option value="5">5 Attempts</option>
+                                <option value="unlimited">Unlimited Attempts</option>
+                              </select>
+                              <div className="form-text small">Default limit for new exams unless overridden.</div>
+                            </div>
+
+                            <div className="mb-0">
+                              <label className="form-label fw-bold small text-uppercase text-muted">Grading Strategy</label>
+                              <select
+                                className="form-select border-0 bg-white shadow-sm"
+                                value={settings.gradingStrategy}
+                                onChange={(e) => updateSettings('gradingStrategy', e.target.value)}
+                              >
+                                <option value="highest">Highest Score (Best of all attempts)</option>
+                                <option value="latest">Latest Score (Most recent attempt)</option>
+                                <option value="average">Average Score (All attempts)</option>
+                              </select>
+                              <div className="form-text small">Determines which score appears on the final transcript.</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Restrictions & Timing Card */}
+                      <div className="col-md-6">
+                        <div className="card shadow-sm border-0 h-100 bg-light bg-opacity-50">
+                          <div className="card-header bg-transparent border-bottom-0 pt-3 px-3">
+                            <h6 className="fw-bold text-danger mb-0">
+                              <i className="bi bi-hourglass-split me-2"></i>Scaling & Restrictions
+                            </h6>
+                          </div>
+                          <div className="card-body px-3 pb-3">
+                            <div className="mb-3">
+                              <label className="form-label fw-bold small text-uppercase text-muted">Cooldown Period</label>
+                              <select
+                                className="form-select border-0 bg-white shadow-sm"
+                                value={settings.cooldownPeriod}
+                                onChange={(e) => updateSettings('cooldownPeriod', e.target.value)}
+                              >
+                                <option value="0">None (Immediate Reattempt)</option>
+                                <option value="30">30 Minutes</option>
+                                <option value="60">1 Hour</option>
+                                <option value="1440">24 Hours</option>
+                                <option value="10080">7 Days</option>
+                              </select>
+                              <div className="form-text small">Waiting time required between consecutive attempts.</div>
+                            </div>
+
+                            <div className="mb-0">
+                              <label className="form-label fw-bold small text-uppercase text-muted">Eligibility Condition</label>
+                              <select
+                                className="form-select border-0 bg-white shadow-sm"
+                                value={settings.allowReattemptCondition}
+                                onChange={(e) => updateSettings('allowReattemptCondition', e.target.value)}
+                              >
+                                <option value="always">Always Allow (If attempts remain)</option>
+                                <option value="failed_only">Only if Previous Attempt Failed</option>
+                                <option value="below_70">Only if Score &lt; 70%</option>
+                              </select>
+                              <div className="form-text small">Prerequisites for unlocking a reattempt.</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Advanced Settings (Full Width) */}
+                      <div className="col-12">
+                        <div className="card shadow-sm border-0 bg-light bg-opacity-50">
+                          <div className="card-body p-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <div>
+                              <h6 className="fw-bold mb-1">Reset Question Pool?</h6>
+                              <p className="text-muted small mb-0">Should reattempts receive a new set of randomized questions?</p>
+                            </div>
+                            <div className="form-check form-switch">
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                id="randomizeQuestions"
+                                checked={settings.randomizeQuestions}
+                                onChange={(e) => updateSettings('randomizeQuestions', e.target.checked)}
+                              />
+                              <label className="form-check-label" htmlFor="randomizeQuestions">Randomize Questions</label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+
                 <hr className="my-5 border-secondary opacity-10" />
 
                 <div className="row">
                   {/* Left Column: Form */}
                   <div className="col-lg-5">
-                    <div className="sticky-top" style={{ top: "20px", zIndex: 1 }}>
+                    <div className="sticky-top" style={{ top: "100px", zIndex: 1 }}>
                       <h5 className="fw-bold mb-3">Add Question</h5>
                       <div className="card border-0 shadow-sm overflow-hidden" style={{ borderRadius: "15px" }}>
                         <div className="card-body p-0">
@@ -282,13 +422,16 @@ const CreateExam = () => {
                                 <span className="badge bg-light text-dark mb-2 border">Q{index + 1} &bull; {q.type.toUpperCase()}</span>
                                 <span className="fw-bold text-primary">{q.marks} Marks</span>
                               </div>
-                              <h6 className="card-title fw-bold text-dark">{q.question}</h6>
-
-                              {q.image && (
-                                <div className="mt-2 mb-2">
-                                  <img src={q.image} alt="Ref" className="img-thumbnail" style={{ height: '80px' }} />
+                              <div className="d-flex flex-column flex-sm-row align-items-start gap-3">
+                                <div className="flex-grow-1">
+                                  <h6 className="card-title fw-bold text-dark">{q.question}</h6>
                                 </div>
-                              )}
+                                {q.image && (
+                                  <div className="flex-shrink-0">
+                                    <img src={q.image} alt="Ref" className="img-thumbnail" style={{ height: '100px', maxWidth: '150px', objectFit: 'contain' }} />
+                                  </div>
+                                )}
+                              </div>
 
                               {q.type === 'quiz' && (
                                 <ul className="list-unstyled small text-muted mb-0 ps-2 border-start border-3 border-light">
